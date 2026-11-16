@@ -78,7 +78,7 @@ let unsubToday = null, unsubHistory = null, unsubConfig = null;
 
 // ---------- Knöpfe mit Glas-Bild ----------
 function glassIcon(mlValue, index) {
-  const w = 62 + index * 16;           // Glas wird von Knopf zu Knopf größer
+  const w = 74 + index * 14;          // Glas wird von Knopf zu Knopf größer
   const h = 62 + index * 19;
   const cx = 80, bottom = 124, top = bottom - h;
   const tl = cx - w / 2, tr = cx + w / 2;
@@ -86,12 +86,12 @@ function glassIcon(mlValue, index) {
   const waterTop = top + h * 0.16;
   const k = (waterTop - top) / h;
   const wl = tl + (bl - tl) * k, wr = tr + (br - tr) * k;
-  const fs = index === 0 ? 19 : 21;
+  const fs = index === 0 ? 22 : 25;
   return `<svg viewBox="0 0 160 132" aria-hidden="true">
     <path d="M${wl} ${waterTop} L${bl} ${bottom} L${br} ${bottom} L${wr} ${waterTop} Z" fill="#bfe0fa"/>
     <path d="M${tl} ${top} L${bl} ${bottom} L${br} ${bottom} L${tr} ${top}" fill="none" stroke="#0e2a43" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
     <text x="${cx}" y="${bottom - h * 0.36}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#0e2a43">${mlValue}</text>
-    <text x="${cx}" y="${bottom - h * 0.36 + 17}" text-anchor="middle" font-size="15" font-weight="700" fill="#0e2a43">ml</text>
+    <text x="${cx}" y="${bottom - h * 0.36 + 18}" text-anchor="middle" font-size="16" font-weight="700" fill="#0e2a43">ml</text>
   </svg>`;
 }
 function buildButtons() {
