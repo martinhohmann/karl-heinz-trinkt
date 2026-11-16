@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Karl-Heinz trinkt</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3f8fc">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Trinken">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<style>
+  :root {
+    --bg: #f3f8fc;
+    --card: #ffffff;
+    --ink: #0e2a43;
+    --ink-soft: #4a637a;
+    --water: #2d8fe3;
+    --water-deep: #1b6fc0;
+    --water-pale: #d5eafb;
+    --line: #c9d9e6;
+    --good: #1f8a4c;
+    --warn: #b4530a;
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 20px;
+    line-height: 1.35;
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  .app {
+    min-height: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: calc(14px + env(safe-area-inset-top)) 18px calc(96px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+  }
+  header.top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  header.top h1 { font-size: 30px; margin: 0; letter-spacing: -0.01em; }
+  header.top .date { color: var(--ink-soft); font-size: 20px; }
+
+  /* ---------- Heute ---------- */
+  .today { display: grid; gap: 18px; grid-template-columns: 1fr; flex: 1; }
+  @media (min-width: 820px) and (orientation: landscape) {
+    .today { grid-template-columns: 1fr 1fr; align-items: center; }
+  }
+  .glass-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px 16px 16px;
+    text-align: center;
+    box-shadow: 0 1px 0 var(--line);
+  }
+  .remaining { font-size: 26px; color: var(--ink-soft); margin: 0; }
+  .remaining strong { display: block; font-size: 62px; line-height: 1.05; color: var(--ink); font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .remaining.done strong { color: var(--good); }
+  .glass-wrap { margin: 8px auto 4px; width: min(100%, 320px); }
+  .glass-wrap svg { width: 100%; height: auto; max-height: 40vh; display: block; }
+  #water { transition: transform .9s cubic-bezier(.2,.8,.2,1); }
+  .drunk { font-size: 24px; margin: 4px 0 0; font-variant-numeric: tabular-nums; }
+  .drunk b { font-weight: 700; }
+
+  .side h2 { font-size: 24px; margin: 0 0 10px; }
+  .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .add {
+    background: var(--card);
+    border: 3px solid var(--water);
+    border-radius: var(--radius);
+    padding: 10px 8px 12px;
+    min-height: 190px;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    transition: transform .08s ease, background .15s ease;
+  }
+  .add:active, .add.pressed { transform: scale(.96); background: var(--water-pale); }
+  .add:focus-visible, .linkbtn:focus-visible, .tab:focus-visible, .big:focus-visible { outline: 4px solid #f2a900; outline-offset: 2px; }
+  .add svg { width: 100%; max-width: 190px; height: 130px; }
+  .add .cap { font-size: 22px; font-weight: 700; margin-top: 4px; }
+
+  .last { margin-top: 14px; background: var(--card); border-radius: var(--radius); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; box-shadow: 0 1px 0 var(--line); }
+  .last p { margin: 0; font-size: 20px; }
+  .linkbtn { background: none; border: 2px solid var(--line); border-radius: 14px; padding: 10px 16px; font-size: 20px; font-weight: 600; min-height: 52px; }
+  .linkbtn:active { background: var(--water-pale); }
+  .push-row { margin-top: 12px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 19px; color: var(--ink-soft); }
+  .push-row .on { color: var(--good); font-weight: 600; }
+
+  /* ---------- Verlauf ---------- */
+  .card { background: var(--card); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 0 var(--line); }
+  .card h2 { font-size: 24px; margin: 0 0 12px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .stat { background: var(--bg); border-radius: 16px; padding: 12px; }
+  .stat .v { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .k { font-size: 16px; color: var(--ink-soft); }
+  .bars { display: grid; grid-template-columns: repeat(14, 1fr); gap: 6px; align-items: end; height: 220px; position: relative; padding-top: 22px; }
+  .bars .goal { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--ink-soft); font-size: 14px; color: var(--ink-soft); }
+  .bars .goal span { position: absolute; right: 0; top: -20px; background: var(--card); padding-left: 6px; }
+  .bar { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; min-width: 0; }
+  .bar i { display: block; width: 100%; background: var(--water); border-radius: 6px 6px 0 0; min-height: 2px; }
+  .bar.reached i { background: var(--water-deep); }
+  .bar.today i { outline: 3px solid var(--ink); outline-offset: 1px; }
+  .bar .n { font-size: 12px; color: var(--ink-soft); margin-bottom: 3px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .barlabels { display: grid; grid-template-columns: repeat(14, 1fr); gap: 6px; margin-top: 6px; font-size: 13px; color: var(--ink-soft); text-align: center; }
+  .barlabels b { display: block; color: var(--ink); font-weight: 600; }
+  @media (max-width: 560px) { .bar .n { display: none; } .barlabels { font-size: 11px; } }
+  table.days { width: 100%; border-collapse: collapse; font-size: 19px; font-variant-numeric: tabular-nums; }
+  table.days td { padding: 9px 4px; border-top: 1px solid var(--line); }
+  table.days td:nth-child(2) { text-align: right; font-weight: 700; }
+  table.days td:nth-child(3) { text-align: right; color: var(--ink-soft); width: 7em; }
+  table.days .ok { color: var(--good); font-weight: 600; }
+  .entries { list-style: none; margin: 0; padding: 0; columns: 2; font-size: 19px; font-variant-numeric: tabular-nums; }
+  .entries li { padding: 4px 0; break-inside: avoid; }
+  details.setup summary { font-size: 20px; font-weight: 600; cursor: pointer; padding: 6px 0; }
+  details.setup p, details.setup ol { font-size: 18px; color: var(--ink-soft); }
+  details.setup ol { padding-left: 1.3em; }
+  details.setup code { background: var(--bg); padding: 2px 6px; border-radius: 6px; color: var(--ink); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
+  .note { font-size: 18px; color: var(--ink-soft); }
+  .note.err { color: var(--warn); font-weight: 600; }
+
+  /* ---------- Navigation ---------- */
+  nav.tabs {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: var(--card); border-top: 1px solid var(--line);
+    display: grid; grid-template-columns: 1fr 1fr;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); gap: 10px;
+  }
+  .tab { border: 0; background: none; border-radius: 14px; font-size: 22px; font-weight: 700; padding: 14px 8px; min-height: 60px; color: var(--ink-soft); }
+  .tab[aria-selected="true"] { background: var(--water-pale); color: var(--ink); }
+
+  /* ---------- Anmeldung, Dialog, Hinweis ---------- */
+  .login { max-width: 520px; margin: 8vh auto 0; text-align: center; }
+  .login h1 { font-size: 36px; margin: 10px 0 6px; }
+  .login p { color: var(--ink-soft); }
+  .login input[type=password], .login input[type=text] {
+    width: 100%; font: inherit; font-size: 26px; padding: 16px; border-radius: 16px; border: 3px solid var(--line); text-align: center; margin: 14px 0 8px; background: #fff; color: var(--ink);
+  }
+  .login input:focus { outline: none; border-color: var(--water); }
+  .login label.show { display: inline-flex; align-items: center; gap: 8px; font-size: 18px; color: var(--ink-soft); }
+  .login label.show input { width: 22px; height: 22px; }
+  .big { display: block; width: 100%; background: var(--water-deep); color: #fff; border: 0; border-radius: 16px; font-size: 24px; font-weight: 700; padding: 16px; min-height: 64px; margin-top: 14px; }
+  .big.ghost { background: none; color: var(--ink); border: 2px solid var(--line); font-size: 20px; font-weight: 600; }
+  .big:disabled { opacity: .5; }
+
+  .overlay { position: fixed; inset: 0; background: rgba(14, 42, 67, .55); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .dialog { background: var(--card); border-radius: 26px; padding: 28px 24px 22px; max-width: 520px; width: 100%; text-align: center; }
+  .dialog .drop { font-size: 64px; line-height: 1; }
+  .dialog h2 { font-size: 34px; margin: 10px 0 6px; }
+  .dialog p { font-size: 22px; color: var(--ink-soft); margin: 0 0 6px; }
+
+  .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(92px + env(safe-area-inset-bottom)); background: var(--ink); color: #fff; border-radius: 16px; padding: 14px 20px; font-size: 21px; font-weight: 600; z-index: 15; box-shadow: 0 6px 24px rgba(14,42,67,.3); max-width: calc(100% - 32px); text-align: center; }
+
+  @media (prefers-reduced-motion: reduce) { #water, .add { transition: none; } }
+</style>
+</head>
+<body>
+
+<!-- Anmeldung (nur einmal pro Gerät nötig) -->
+<main class="app" id="loginView" hidden>
+  <form class="login" id="loginForm" autocomplete="off">
+    <svg width="84" height="100" viewBox="0 0 84 100" aria-hidden="true"><path d="M8 6 L18 88 Q19 95 26 95 L58 95 Q65 95 66 88 L76 6" fill="#d5eafb" stroke="#0e2a43" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/><path d="M13 44 L18.5 88 Q19 92 26 92 L58 92 Q65 92 65.5 88 L71 44 Z" fill="#2d8fe3"/></svg>
+    <h1>Karl-Heinz trinkt</h1>
+    <p>Bitte einmal den Familien-Code eingeben. Danach merkt sich dieses Gerät die Anmeldung.</p>
+    <input id="code" type="password" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Familien-Code" aria-label="Familien-Code" minlength="6" required>
+    <label class="show"><input type="checkbox" id="showCode"> Code anzeigen</label>
+    <button class="big" type="submit" id="btnLogin">Anmelden</button>
+    <button class="big ghost" type="button" id="btnCreate">Zum allerersten Mal: Code neu festlegen</button>
+    <p class="note" id="loginMsg" role="status"></p>
+  </form>
+</main>
+
+<!-- App -->
+<main class="app" id="appView" hidden>
+  <header class="top">
+    <h1>Karl-Heinz trinkt</h1>
+    <div class="date" id="dateLabel"></div>
+  </header>
+
+  <section id="viewToday" class="today">
+    <div class="glass-card">
+      <p class="remaining" id="remaining" aria-live="polite">Noch<strong>–</strong>bis zum Ziel</p>
+      <div class="glass-wrap">
+        <svg viewBox="0 0 300 380" role="img" aria-labelledby="glassTitle">
+          <title id="glassTitle">Glas mit dem heutigen Füllstand</title>
+          <defs>
+            <clipPath id="inside"><path d="M38 24 L66 350 Q67 358 76 358 L224 358 Q233 358 234 350 L262 24 Z"/></clipPath>
+          </defs>
+          <path d="M38 24 L66 350 Q67 358 76 358 L224 358 Q233 358 234 350 L262 24 Z" fill="#eef6fd"/>
+          <g clip-path="url(#inside)">
+            <g id="water" style="transform: translateY(334px)">
+              <rect x="0" y="24" width="300" height="340" fill="#2d8fe3"/>
+              <rect x="0" y="24" width="300" height="10" fill="#6fb6f2"/>
+            </g>
+          </g>
+          <g stroke="#0e2a43" stroke-opacity=".45" stroke-width="3" stroke-linecap="round">
+            <line x1="222" y1="274.5" x2="246" y2="274.5"/>
+            <line x1="229" y1="191" x2="253" y2="191"/>
+            <line x1="236" y1="107.5" x2="260" y2="107.5"/>
+          </g>
+          <g font-size="17" fill="#0e2a43" fill-opacity=".8" text-anchor="end" font-weight="600">
+            <text x="216" y="280">0,5 l</text>
+            <text x="223" y="197">1 l</text>
+            <text x="230" y="113">1,5 l</text>
+          </g>
+          <path d="M30 14 L62 352 Q63.5 366 78 366 L222 366 Q236.5 366 238 352 L270 14" fill="none" stroke="#0e2a43" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <p class="drunk" id="drunk">–</p>
+    </div>
+
+    <div class="side">
+      <h2>Was hast du getrunken?</h2>
+      <div class="buttons" id="buttons"></div>
+      <div class="last">
+        <p id="lastEntry">Heute noch nichts eingetragen.</p>
+        <button class="linkbtn" id="btnUndo" hidden>Letzten Eintrag löschen</button>
+      </div>
+      <div class="push-row" id="pushRow"></div>
+    </div>
+  </section>
+
+  <section id="viewHistory" hidden>
+    <div class="card">
+      <h2>Letzte 7 Tage</h2>
+      <div class="stats">
+        <div class="stat"><div class="v" id="statAvg">–</div><div class="k">Durchschnitt pro Tag</div></div>
+        <div class="stat"><div class="v" id="statGoal">–</div><div class="k">Tage mit erreichtem Ziel</div></div>
+        <div class="stat"><div class="v" id="statToday">–</div><div class="k">Heute bisher</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Verlauf – 14 Tage</h2>
+      <div class="bars" id="bars" role="img" aria-label="Trinkmenge der letzten 14 Tage als Balken"></div>
+      <div class="barlabels" id="barLabels"></div>
+    </div>
+    <div class="card">
+      <h2>Heute im Einzelnen</h2>
+      <ul class="entries" id="entryList"></ul>
+    </div>
+    <div class="card">
+      <h2>Tage als Liste</h2>
+      <table class="days"><tbody id="dayTable"></tbody></table>
+    </div>
+    <div class="card">
+      <details class="setup">
+        <summary>Einrichtung (für Martin)</summary>
+        <h3>Erinnerungen einrichten</h3>
+        <p id="setupState">…</p>
+        <ol>
+          <li>„Schlüssel erzeugen“ drücken.</li>
+          <li>„Geheimnis kopieren“ drücken.</li>
+          <li>Bei GitHub ein Secret mit dem Namen <code>PUSH_SECRET</code> anlegen und das Geheimnis einfügen:
+            <a href="https://github.com/martinhohmann/karl-heinz-trinkt/settings/secrets/actions/new" target="_blank" rel="noopener">Secret-Seite öffnen</a></li>
+          <li>Auf dem iPad: App zum Home-Bildschirm hinzufügen, dort öffnen und „Erinnerungen einschalten“ drücken.</li>
+        </ol>
+        <div class="row">
+          <button class="linkbtn" id="btnSetup">Schlüssel erzeugen</button>
+          <button class="linkbtn" id="btnCopySecret" hidden>Geheimnis kopieren</button>
+        </div>
+        <p class="note" id="setupMsg" role="status"></p>
+        <h3>Dieses Gerät</h3>
+        <div class="row"><button class="linkbtn" id="btnLogout">Abmelden</button></div>
+      </details>
+    </div>
+  </section>
+</main>
+
+<nav class="tabs" id="tabs" hidden role="tablist">
+  <button class="tab" role="tab" id="tabToday" aria-selected="true">Heute</button>
+  <button class="tab" role="tab" id="tabHistory" aria-selected="false">Verlauf</button>
+</nav>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<div class="overlay" id="reminder" hidden>
+  <div class="dialog" role="alertdialog" aria-labelledby="remTitle" aria-describedby="remText">
+    <div class="drop" aria-hidden="true">💧</div>
+    <h2 id="remTitle">Zeit für ein Glas Wasser</h2>
+    <p id="remText"></p>
+    <button class="big" id="remOk">In Ordnung</button>
+  </div>
+</div>
+
+<noscript>Diese App braucht JavaScript.</noscript>
+<script type="module" src="app.js?v=1"></script>
+</body>
+</html>

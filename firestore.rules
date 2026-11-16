@@ -1,0 +1,53 @@
+rules_version = '2';
+
+// Regeln der Datenbank "Trink-App". Diese Datei ist die Vorlage;
+// gültig ist, was in der Firebase-Konsole unter Firestore > Regeln veröffentlicht ist.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Das gemeinsame Familien-Konto (Anmeldung in der App mit dem Code).
+    function familie() {
+      return request.auth != null
+        && request.auth.token.email == 'karl-heinz-trinkt@example.com';
+    }
+
+    // Das Konto des Erinnerungs-Dienstes; welches das ist, steht in config/push.
+    function bot() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/config/push)
+        && request.auth.token.email == get(/databases/$(database)/documents/config/push).data.botEmail;
+    }
+
+    // Ein Dokument pro Tag: days/2026-11-16
+    match /days/{day} {
+      allow read: if familie() || bot();
+      allow create, update: if familie()
+        && day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.keys().hasOnly(['date', 'total', 'entries', 'last'])
+        && request.resource.data.date == day
+        && request.resource.data.total is int
+        && request.resource.data.total >= 0
+        && request.resource.data.total <= 20000
+        && request.resource.data.entries is list
+        && request.resource.data.entries.size() <= 200;
+    }
+
+    // Geräte, die Mitteilungen bekommen sollen.
+    match /push/{id} {
+      allow read, delete: if familie() || bot();
+      allow create, update: if familie()
+        && request.resource.data.keys().hasOnly(['sub', 'ua', 'created'])
+        && request.resource.data.sub is string
+        && request.resource.data.sub.size() < 3000;
+    }
+
+    // Öffentlicher Teil der Erinnerungs-Einrichtung (kein Geheimnis).
+    match /config/push {
+      allow read: if familie() || (request.auth != null && request.auth.token.email == resource.data.botEmail);
+      allow create, update: if familie()
+        && request.resource.data.keys().hasOnly(['vapidPublic', 'botEmail', 'created'])
+        && request.resource.data.vapidPublic is string
+        && request.resource.data.botEmail.matches('^bot-[0-9a-f]{16}@example[.]com$');
+    }
+  }
+}

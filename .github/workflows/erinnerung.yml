@@ -1,0 +1,43 @@
+name: Erinnerung
+
+on:
+  schedule:
+    # stündlich (UTC); das Skript erinnert nur um 10, 12, 14, 16 und 18 Uhr deutscher Zeit
+    - cron: '2 8-17 * * *'
+  workflow_dispatch:
+    inputs:
+      test:
+        description: 'Probe-Mitteilung sofort senden'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: erinnerung
+  cancel-in-progress: false
+
+jobs:
+  senden:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --no-audit --no-fund web-push@3
+      - name: Prüfen und erinnern
+        run: node tools/erinnerung.mjs
+        env:
+          PUSH_SECRET: ${{ secrets.PUSH_SECRET }}
+          MODE: ${{ (github.event_name == 'workflow_dispatch' && inputs.test) && 'test' || 'plan' }}
+      - name: Zeitplan aktiv halten
+        # GitHub schaltet Zeitpläne in öffentlichen Repos nach 60 Tagen ohne Aktivität ab.
+        if: always()
+        continue-on-error: true
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/erinnerung.yml/enable"
+        env:
+          GH_TOKEN: ${{ github.token }}
