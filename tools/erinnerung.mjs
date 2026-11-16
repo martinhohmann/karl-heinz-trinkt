@@ -78,9 +78,13 @@ async function main() {
   if (!docs.length) { console.log('Kein Gerät hat Erinnerungen eingeschaltet.'); return; }
 
   webpush.setVapidDetails(APP_URL, vapidPublic, secret);
-  const payload = JSON.stringify(test
-    ? { title: 'Karl-Heinz trinkt', body: 'Probe: So sieht eine Erinnerung aus.' }
-    : { title: 'Zeit für ein Glas Wasser 💧', body: `Heute bisher ${fmt(total)} ml – noch ${fmt(GOAL - total)} ml bis zum Ziel.` });
+  // Im Test geht dieselbe Mitteilung raus wie im Alltag, nur unabhängig von Uhrzeit und Rückstand.
+  const payload = JSON.stringify({
+    title: 'Zeit für ein Glas Wasser 💧',
+    body: total >= GOAL
+      ? `Heute schon ${fmt(total)} ml – Tagesziel erreicht.`
+      : `Heute bisher ${fmt(total)} ml – noch ${fmt(GOAL - total)} ml bis zum Ziel.`
+  });
 
   let ok = 0;
   for (const d of docs) {
